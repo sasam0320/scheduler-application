@@ -26,7 +26,7 @@ Installations steps
   
   This will start Spring Boot application.
 
-4.scheduler-app-angular project is the frontend part of the application and may be downloaded from https://github.com/sasam0320/scheduler-application.git repository
+4.scheduler-app-angular project is the frontend part of the application and may be downloaded from https://github.com/sasam0320/scheduler-app-angular.git repository
 
 5.Use separate Command Prompt window or install Visual Studio Code terminal and type:
  
