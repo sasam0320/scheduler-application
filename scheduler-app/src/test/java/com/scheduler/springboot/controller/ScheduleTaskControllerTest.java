@@ -42,9 +42,9 @@ public class ScheduleTaskControllerTest {
     @BeforeEach
     void setUp() {
         this.tasks = new ArrayList<>();
-        this.tasks.add(new ScheduleTask(1L, "println 'Task 1 running'", "Task 1", "* /1 * * * *"));
-        this.tasks.add(new ScheduleTask(2L, "println 'Task 2 running'", "Task 2", "30 3 * * * *"));
-        this.tasks.add(new ScheduleTask(3L, "println 'Task 3 running'", "Task 3", "* 59 19 * * *"));
+        this.tasks.add(new ScheduleTask(1L, "println 'Task 1 running'", "Task 1", "0 0/3 * * * ? *"));
+        this.tasks.add(new ScheduleTask(2L, "println 'Task 2 running'", "Task 2", "0 0/5 * * * ? *"));
+        this.tasks.add(new ScheduleTask(3L, "println 'Task 3 running'", "Task 3", "0 55 19 1/1 * ? *"));
 
     }
 
@@ -72,15 +72,15 @@ public class ScheduleTaskControllerTest {
     @Test
     void shouldCreateNewTask() throws Exception {
 
-         ScheduleTask postedTask = new ScheduleTask(4, "Task 4", "* /3 * * * *", "println 'Task 4 running'");
-         ScheduleTask returnedTask = new ScheduleTask(4, "Task 4", "* /3 * * * *", "println 'Task 4 running'");
+         ScheduleTask postedTask = new ScheduleTask(4, "Task 4", "0 0 1/1 * * ? *", "println 'Task 4 running'");
+         ScheduleTask returnedTask = new ScheduleTask(4, "Task 4", "0 0 1/1 * * ? *", "println 'Task 4 running'");
 
         doReturn(returnedTask).when(scheduleTaskRepository).save(any());
 
          String json = new ObjectMapper().writeValueAsString(postedTask);
 
          //Execute the POST request
-        mockMvc.perform(post("/tasks/create")
+        mockMvc.perform(post("/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
                         .accept(MediaType.APPLICATION_JSON))
