@@ -1,9 +1,14 @@
 package com.scheduler.springboot.controller;
 
 import com.scheduler.springboot.domain.ScheduleTask;
+import com.scheduler.springboot.dto.ScheduleTaskDTO;
 import com.scheduler.springboot.exception.TaskNotFoundException;
 import com.scheduler.springboot.repo.ScheduleTaskRepository;
+import com.scheduler.springboot.scheduler.ScheduleTaskExecutor;
+import com.scheduler.springboot.utils.ScheduleTaskUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,15 +20,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+
 
 @RestController
+@Slf4j
 @RequestMapping("/tasks")
 public class ScheduleTaskController {
 
+
     @Autowired
     private ScheduleTaskRepository scheduleTaskRepository;
+
+    @Autowired
+    private ScheduleTaskExecutor scheduleTaskExecutor;
 
     @GetMapping
     public List<ScheduleTask> getAllTasks() {
@@ -34,75 +43,54 @@ public class ScheduleTaskController {
     @GetMapping("/{taskId}")
     public ScheduleTask getTaskById(@PathVariable("taskId") long taskId) {
 
-        Optional<ScheduleTask> task = scheduleTaskRepository.findById(taskId);
+        ScheduleTask task = scheduleTaskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("Task not found with this id : " + taskId));
 
-        try {
-
-            if (!task.isPresent())
-                throw new TaskNotFoundException("Task not found for this id : " + taskId);
-
-        } catch (TaskNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.getMessage();
-        }
-
-
-        return task.get();
+        return task;
     }
 
     @GetMapping("/search")
-    public ScheduleTask getTaskByName(@RequestParam(value="name") String name) {
+    public ScheduleTask getTaskByName(@RequestParam(value = "name") String name) {
 
-        Optional<ScheduleTask> task = scheduleTaskRepository.findByName(name);
+        ScheduleTask task = scheduleTaskRepository.findByName(name).orElseThrow(() -> new TaskNotFoundException("Task not found with this name : " + name));
 
-        try {
-
-            if (!task.isPresent())
-                throw new TaskNotFoundException("Task not found with this name : " + name);
-
-        } catch (TaskNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.getMessage();
-        }
-
-
-        return task.get();
+        return task;
     }
 
-    @PostMapping(path = "/create", consumes = "application/json", produces = "application/json")
-    public ScheduleTask createTask(@RequestBody Map<String, String> taskData) {
-
-        String name = taskData.get("name");
-        String recurrence = taskData.get("recurrence");
-        String code = taskData.get("code");
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ScheduleTask createTask(@RequestBody ScheduleTaskDTO taskDto) {
 
         ScheduleTask scheduleTask = new ScheduleTask();
-        scheduleTask.setName(name);
-        scheduleTask.setRecurrence(recurrence);
-        scheduleTask.setCode(code);
+        scheduleTask.setName(taskDto.getName());
+        scheduleTask.setRecurrence(taskDto.getRecurrence());
+        scheduleTask.setCode(taskDto.getCode());
 
         ScheduleTask savedTask = scheduleTaskRepository.save(scheduleTask);
 
         return savedTask;
     }
 
-    @PutMapping(path = "/edit/{id}")
-    public ScheduleTask editTask(@PathVariable("id") long taskId, @RequestBody Map<String, String> taskData) {
+    @PostMapping(path = "/run", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public void runTasks(@RequestBody List<ScheduleTaskDTO> dtoList) {
 
-        ScheduleTask scheduleTask = null;
+        List<ScheduleTask> tasks;
 
         try {
-
-            scheduleTask = scheduleTaskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("Task not found for this id : " + taskId));
-
-
-        } catch (TaskNotFoundException e) {
-            e.getMessage();
+            tasks = ScheduleTaskUtil.convertList(dtoList);
+            scheduleTaskExecutor.run(tasks);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        scheduleTask.setName(taskData.get("name"));
-        scheduleTask.setRecurrence(taskData.get("recurrence"));
-        scheduleTask.setCode(taskData.get("code"));
+    }
+
+    @PutMapping(path = "/{id}")
+    public ScheduleTask editTask(@PathVariable("id") long taskId, @RequestBody ScheduleTaskDTO taskDto) {
+
+        ScheduleTask scheduleTask = scheduleTaskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("Task not found for this id : " + taskId));
+
+        scheduleTask.setName(taskDto.getName());
+        scheduleTask.setRecurrence(taskDto.getRecurrence());
+        scheduleTask.setCode(taskDto.getCode());
 
         ScheduleTask updatedTask = scheduleTaskRepository.save(scheduleTask);
 
@@ -112,22 +100,12 @@ public class ScheduleTaskController {
     @DeleteMapping(path = "/{id}")
     public ScheduleTask deleteTask(@PathVariable("id") long taskId) {
 
-        ScheduleTask scheduleTask = null;
-
-        try {
-
-            scheduleTask = scheduleTaskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("Task not found for this id : " + taskId));
-
-
-        } catch (TaskNotFoundException e) {
-            e.getMessage();
-        }
+        ScheduleTask scheduleTask = scheduleTaskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("Task not found for this id : " + taskId));
 
         scheduleTaskRepository.delete(scheduleTask);
 
         return scheduleTask;
     }
-
 
 
 }

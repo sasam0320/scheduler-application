@@ -1,17 +1,12 @@
 package com.scheduler.springboot.exception;
 
-public class TaskNotFoundException extends Exception {
+public class TaskNotFoundException extends RuntimeException {
 
-    private String message;
+    private static final long serialVersionUID = 1L;
 
-    public TaskNotFoundException(String message){
+    public TaskNotFoundException(String message) {
 
-        this.message = message;
+        super(message);
     }
 
-    @Override
-    public String getMessage() {
-
-        return this.message ;
-    }
 }
